@@ -27,8 +27,6 @@ def i_suppose_i_have_earned_so_much_points(amount_of_points):
         point_button[i].configure(bg='green')
         winsound.Beep(440 + i * 100, 500)
 
-# Call the function with the desired number of points (e.g., 3)
-i_suppose_i_have_earned_so_much_points(3)
 
 # Create the figure and axes
 fig, ax = plt.subplots(figsize=(8, 6))
@@ -49,6 +47,8 @@ ax.add_artist(beach)
 pool_height = 20
 pool_width = 60
 pool_matrix = np.zeros((pool_height, pool_width))
+
+
 
 # Position the pool on the island
 pool_x, pool_y = 0, 0
@@ -84,6 +84,23 @@ ax.axis('off')
 canvas = FigureCanvasTkAgg(fig, master=window)
 canvas_widget = canvas.get_tk_widget()
 canvas_widget.grid(row=1, column=0, columnspan=6)  # Adjust the row and column as needed
+
+import numpy as np
+
+# Define the size of the ditches
+ditch_length = 100
+ditch_width = 1
+
+# Create the matrices for Ernest's ditch and Kernest's ditch
+ernest_ditch_matrix = np.zeros((ditch_length, ditch_width))
+kernest_ditch_matrix = np.zeros((ditch_length, ditch_width))
+
+# Draw Ernest's ditch (set the values to 1)
+ernest_ditch_matrix[10:110, :] = 1  # For example, starting from row 10 to row 109
+
+# Draw Kernest's ditch (set the values to 1)
+kernest_ditch_matrix[20:120, :] = 1  # For example, starting from row 20 to row 119
+
 
 # Start the Tkinter event loop
 window.mainloop()
