@@ -1,106 +1,111 @@
+import tkinter as tk
+from tkinter import ttk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 import numpy as np
-import tkinter as tk
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import winsound
+import threading
 import time
+import winsound
+import random
 
-# Create a Tkinter window
-window = tk.Tk()
-window.title("Exercise 5")
-window.geometry("700x700")
+class IslandApp:
 
-# Add five buttons to the top line of the window
-decoration = tk.Label(window, text="").grid(row=0, column=0)
-point_button = []
+    def __init__(self, window):
+        self.window = window
+        self.window.title("Island Ditching")
 
-for i in range(5):
-    button_temp = tk.Button(window, text="Points: " + str(i + 1), padx=40)
-    button_temp.grid(row=0, column=i + 1)
-    point_button.append(button_temp)
+        # Ditch matrices initialized to zeros
+        self.ernest_ditch_matrix = np.zeros((100, 1))
+        self.kernest_ditch_matrix = np.zeros((100, 1))
 
-def i_suppose_i_have_earned_so_much_points(amount_of_points):
-    for i in range(5):
-        point_button[i].configure(bg='gray')
-    time.sleep(1)
-    for i in range(amount_of_points):
-        point_button[i].configure(bg='green')
-        winsound.Beep(440 + i * 100, 500)
+        # Create the island visualization
+        self.create_island_scene()
+
+        # Buttons to initiate digging
+        self.ernest_btn = ttk.Button(window, text="Send Monkey to Ernest", command=self.send_monkey_ernest)
+        self.ernest_btn.grid(row=2, column=0)
+
+        self.kernest_btn = ttk.Button(window, text="Send Monkey to Kernest", command=self.send_monkey_kernest)
+        self.kernest_btn.grid(row=2, column=1)
+
+    def create_island_scene(self):
+        self.fig, self.ax = plt.subplots(figsize=(8, 6))
+
+        # Ocean
+        ocean = plt.Rectangle((-150, -150), 300, 300, color='blue')
+        self.ax.add_artist(ocean)
+
+        # Island
+        island = plt.Circle((0, 0), 100, color='lightyellow')
+        self.ax.add_artist(island)
+
+        # Pool
+        pool = plt.Rectangle((-30, -10), 60, 20, color='aqua')
+        self.ax.add_artist(pool)
+
+        self.ax.set_xlim(-150, 150)
+        self.ax.set_ylim(-150, 150)
+        self.ax.set_aspect('equal')
+        self.ax.axis('off')
+
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.window)
+        self.canvas_widget = self.canvas.get_tk_widget()
+        self.canvas_widget.grid(row=1, column=0, columnspan=2)
+
+    def dig_ditch(self, ditch_matrix, x_pos, color):
+        # Choose a random starting point between the pool (0) and the sea (90)
+        start_point = np.random.randint(0, 91)
+
+        # If the starting point is closer to the sea, we dig towards the sea first
+        if start_point > 45:
+            for i in range(start_point, 90):  # Dig from starting point to the sea
+                self.dig_at_point(i, ditch_matrix, x_pos, color)
+
+            for i in range(start_point - 1, -1, -1):  # Dig from starting point back to the pool
+                self.dig_at_point(i, ditch_matrix, x_pos, color)
+
+        # If the starting point is closer to the pool, we dig towards the pool first
+        else:
+            for i in range(start_point, -1, -1):  # Dig from starting point back to the pool
+                self.dig_at_point(i, ditch_matrix, x_pos, color)
+
+            for i in range(start_point + 1, 90):  # Dig from starting point to the sea
+                self.dig_at_point(i, ditch_matrix, x_pos, color)
+
+    def dig_at_point(self, i,ditch_matrix, x_pos, color):
+        if ditch_matrix[i, 0] == 0:
+            ditch_matrix[i, 0] = 1
+        else:
+            ditch_matrix[i, 0] -= 1
+            color = self.get_darker_color(color)
+        self.ax.add_patch(plt.Rectangle((x_pos, 5 + i), 1, 1, color=color))
+        self.canvas.draw()
+
+    def dig_ditch(self, ditch_matrix, x_pos, color):
+        starting_point = random.randint(0, 94)
+        for i in range(starting_point, starting_point+6):  # Monkey digs 6 units from a random starting point
+            time.sleep(0.1)
+            if ditch_matrix[i, 0] < 2:  # Let’s assume they can dig up to 2 times at the same place
+                ditch_matrix[i, 0] += 1
+                current_color = self.get_darker_color(color, ditch_matrix[i, 0])
+                self.ax.add_patch(plt.Rectangle((x_pos, 5+i), 1, 1, color=current_color))
+                self.canvas.draw()
+
+    def get_darker_color(self, base_color, depth):
+        r, g, b = base_color
+        factor = 0.5 ** depth  # Decreasing the brightness exponentially per digging event
+        return r * factor, g * factor, b * factor
+
+    def send_monkey_ernest(self):
+        monkey_thread = threading.Thread(target=self.dig_ditch, args=(self.ernest_ditch_matrix, -25, (1, 0.6, 0.6)))  # light red
+        monkey_thread.start()
+
+    def send_monkey_kernest(self):
+        monkey_thread = threading.Thread(target=self.dig_ditch, args=(self.kernest_ditch_matrix, 24, (0.8, 0.52, 0.25)))  # light brown
+        monkey_thread.start()
 
 
-# Create the figure and axes
-fig, ax = plt.subplots(figsize=(8, 6))
-
-# Create the ocean as a blue background
-ocean = plt.Rectangle((-1, -1), 2, 2, color='blue')
-ax.add_artist(ocean)
-
-# Create the island as a white circle
-island = plt.Circle((0, 0), 1, color='white')
-ax.add_artist(island)
-
-# Create the sandy beach as a lighter shade of yellow
-beach = plt.Circle((0, 0), 0.95, color='lightyellow')
-ax.add_artist(beach)
-
-# Define the pool as a 20x60 matrix filled with zeros
-pool_height = 20
-pool_width = 60
-pool_matrix = np.zeros((pool_height, pool_width))
-
-
-
-# Position the pool on the island
-pool_x, pool_y = 0, 0
-pool_width, pool_length = 0.2, 0.6
-
-# Position the ditches on the island with the previous orientation
-ernest_ditch_x, ernest_ditch_y = pool_x - pool_length / 2, pool_y
-kernest_ditch_x, kernest_ditch_y = pool_x + pool_length / 2, pool_y
-
-# Adjust the orientation of the ditches to face north
-ernest_ditch_orientation = plt.Line2D((ernest_ditch_x, ernest_ditch_x), (0, 1.2), lw=2, color='red')
-kernest_ditch_orientation = plt.Line2D((kernest_ditch_x, kernest_ditch_x), (0, 1.2), lw=2, color='red')
-ax.add_artist(ernest_ditch_orientation)
-ax.add_artist(kernest_ditch_orientation)
-
-# Plot the pool
-pool_rect = plt.Rectangle((pool_x - pool_length/2, pool_y - pool_width/2), pool_length, pool_width, color='cyan', alpha=0.7)
-ax.add_artist(pool_rect)
-
-# Set the limits and aspect ratio
-ax.set_xlim(-1.2, 1.2)
-ax.set_ylim(-1.2, 1.2)
-ax.set_aspect('equal')
-
-# Add labels for reference
-plt.text(ernest_ditch_x - 0.3, ernest_ditch_y + 0.2, "Ernest", color='red')
-plt.text(kernest_ditch_x + 0.2, kernest_ditch_y + 0.2, "Kernest's", color='red')
-
-# Hide axes
-ax.axis('off')
-
-# Create a canvas to embed the Matplotlib plot in the Tkinter window
-canvas = FigureCanvasTkAgg(fig, master=window)
-canvas_widget = canvas.get_tk_widget()
-canvas_widget.grid(row=1, column=0, columnspan=6)  # Adjust the row and column as needed
-
-import numpy as np
-
-# Define the size of the ditches
-ditch_length = 100
-ditch_width = 1
-
-# Create the matrices for Ernest's ditch and Kernest's ditch
-ernest_ditch_matrix = np.zeros((ditch_length, ditch_width))
-kernest_ditch_matrix = np.zeros((ditch_length, ditch_width))
-
-# Draw Ernest's ditch (set the values to 1)
-ernest_ditch_matrix[10:110, :] = 1  # For example, starting from row 10 to row 109
-
-# Draw Kernest's ditch (set the values to 1)
-kernest_ditch_matrix[20:120, :] = 1  # For example, starting from row 20 to row 119
-
-
-# Start the Tkinter event loop
-window.mainloop()
+if __name__ == "__main__":
+    window = tk.Tk()
+    app = IslandApp(window)
+    window.mainloop()
